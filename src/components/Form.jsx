@@ -1,15 +1,33 @@
 import styles from './form.module.css';
-import { useState, useRef, useEffect } from 'react';
-import * as validFields from '../validationForm';
+import { useRef, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
 import { Input } from './Input';
+import { fieldsScheme } from '../validationForm';
+
+const onSubmit = (formData) => {
+	console.log(formData);
+};
 
 export const Form = () => {
-	const [email, setEmail] = useState('');
-	const [emailError, setEmailError] = useState('');
-	const [passwordError, setPasswordError] = useState('');
-	const [password, setPassword] = useState('');
-	const [confirmPassword, setConfirmPassword] = useState('');
-	const [confirmPasswordError, setConfirmPasswordError] = useState('');
+	const {
+		register,
+		handleSubmit,
+		formState: { errors },
+		getValues,
+	} = useForm({
+		defaultValues: {
+			email: '',
+			password: '',
+			confirmPassword: '',
+		},
+		resolver: yupResolver(fieldsScheme),
+		mode: 'onChange',
+	});
+
+	const emailError = errors.email?.message;
+	const passwordError = errors.password?.message;
+	const confirmPasswordError = errors.confirmPassword?.message;
 
 	const submitButtonRef = useRef(null);
 
@@ -18,9 +36,10 @@ export const Form = () => {
 			!emailError &&
 			!passwordError &&
 			!confirmPasswordError &&
-			email &&
-			password &&
-			confirmPassword === password;
+			getValues.email &&
+			getValues.password &&
+			getValues.confirmPassword &&
+			getValues.password === getValues.confirmPassword;
 		return isValid;
 	};
 
@@ -30,46 +49,15 @@ export const Form = () => {
 		}
 	});
 
-	const onEmailChange = ({ target }) => {
-		setEmail(target.value);
-		setEmailError(validFields.validationEmail(target.value));
-	};
-	const onEmailBlur = () => {
-		setEmailError(validFields.validationEmail(email));
-	};
-	const onPasswordChange = ({ target }) => {
-		setPassword(target.value);
-		setPasswordError(validFields.validationPasswordChange(target.value));
-	};
-	const onPasswordBlur = () => {
-		setPasswordError(validFields.validationPasswordBlur(password));
-	};
-	const onConfirmPasswordBlur = () => {
-		setConfirmPasswordError(
-			validFields.validationConfirmPassword(confirmPassword, password),
-		);
-	};
-
-	const onSubmit = (event) => {
-		event.preventDefault();
-		if (email && password && confirmPassword) {
-			console.log('Email: ', email);
-			console.log('Password: ', password);
-			console.log('Confirm password: ', confirmPassword);
-		}
-	};
-
 	return (
-		<form onSubmit={onSubmit} className={styles.form}>
+		<form onSubmit={handleSubmit(onSubmit)} className={styles.form}>
 			<h2>Введите свои данные!</h2>
 			{emailError && <div className={styles.validationError}>{emailError}</div>}
 			<Input
 				type={'email'}
 				name={'email'}
 				placeholder={'Email'}
-				value={email}
-				onChange={onEmailChange}
-				onBlur={onEmailBlur}
+				register={register}
 			/>
 			{passwordError && (
 				<div className={styles.validationError}>{passwordError}</div>
@@ -78,9 +66,7 @@ export const Form = () => {
 				type={'password'}
 				name={'password'}
 				placeholder={'Пароль'}
-				value={password}
-				onChange={onPasswordChange}
-				onBlur={onPasswordBlur}
+				register={register}
 			/>
 			{confirmPasswordError && (
 				<div className={styles.validationError}>{confirmPasswordError}</div>
@@ -89,17 +75,11 @@ export const Form = () => {
 				type={'password'}
 				name={'confirmPassword'}
 				placeholder={'Повторите пароль'}
-				value={confirmPassword}
-				onChange={({ target }) => setConfirmPassword(target.value)}
-				onBlur={onConfirmPasswordBlur}
+				register={register}
 			/>
 			<button
 				type="submit"
-				disabled={
-					emailError !== '' ||
-					passwordError !== '' ||
-					confirmPasswordError !== ''
-				}
+				disabled={!!emailError || !!passwordError || !!confirmPasswordError}
 				ref={submitButtonRef}
 			>
 				Зарегистрироваться
